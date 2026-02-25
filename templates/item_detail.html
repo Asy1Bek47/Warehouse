@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        <h1>Детали товара: {{ item.name }}</h1>
+        <p>Полная информация о выбранном товаре.</p>
+    </div>
+    <a href="{% url 'warehouse' %}" class="btn btn-report">Назад к списку</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="icon-wrap"><ion-icon name="information-circle-outline"></ion-icon></div>
+        <h3>Информация о товаре #{{ item.id }}</h3>
+    </div>
+
+    <div class="item-details-grid">
+        <div class="detail-card">
+            <div class="detail-item">
+                <div class="detail-label">Название</div>
+                <div class="detail-value">{{ item.name }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Категория</div>
+                <div class="detail-value">
+                    <span class="badge {{ item.category }}">{{ item.category }}</span>
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Остаток на складе</div>
+                <div class="detail-value">{{ item.quantity }} шт.</div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <div class="detail-item">
+                <div class="detail-label">Базовая цена</div>
+                <div class="detail-value">${{ item.price }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Налог ({{ item.tax_rate|floatformat:2 }})</div>
+                <div class="detail-value" style="color: var(--danger);">
+                    +${{ item.price|add:0|floatformat:2 }} * {{ item.tax_rate }}
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Скидка ({{ item.discount_rate|floatformat:2 }})</div>
+                <div class="detail-value" style="color: var(--success);">
+                    -${{ item.price|add:0|floatformat:2 }} * {{ item.discount_rate }}
+                </div>
+            </div>
+            <div class="detail-item" style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border);">
+                <div class="detail-label">Итоговая цена</div>
+                <div class="detail-value price-final">${{ item.final_price }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <a href="{% url 'item_edit' item.id %}" class="btn btn-edit">
+            <ion-icon name="create-outline"></ion-icon> Редактировать
+        </a>
+
+        <form method="POST" action="{% url 'item_delete' item.id %}"
+            onsubmit="return confirm('Вы уверены, что хотите удалить товар?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-del">
+                <ion-icon name="trash-outline"></ion-icon> Удалить
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

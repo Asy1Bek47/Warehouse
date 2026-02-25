@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Панель управления складом Nexus{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/warehouse.css' %}">
+
+    <!-- Ionicons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <ion-icon name="cube-outline"></ion-icon>
+            Nexus
+        </div>
+
+        <div class="nav-menu">
+            <a href="{% url 'warehouse' %}"
+                class="nav-item {% if request.resolver_match.url_name == 'warehouse' %}active{% endif %}">
+                <ion-icon name="grid-outline"></ion-icon>
+                Инвентарь
+            </a>
+            <a href="{% url 'item_add' %}"
+                class="nav-item {% if request.resolver_match.url_name == 'item_add' %}active{% endif %}">
+                <ion-icon name="add-circle-outline"></ion-icon>
+                Добавить Товар
+            </a>
+        </div>
+
+        <div class="user-profile">
+            <div class="user-info">
+                <div class="avatar">{{ user|make_list|first|upper }}</div>
+                <div>
+                    <div class="username">{{ user }}</div>
+                    <div class="role">Администратор</div>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="btn-logout" title="Выйти">
+                <ion-icon name="log-out-outline" style="font-size: 22px;"></ion-icon>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="page-title">
+        {% if action == 'add' %}
+        <h1>Добавить Новый Товар</h1>
+        <p>Заполните форму для добавления товара на склад.</p>
+        {% else %}
+        <h1>Редактировать товар: {{ item.name }}</h1>
+        <p>Измените данные товара и сохраните изменения.</p>
+        {% endif %}
+    </div>
+    {% if action == 'edit' %}
+    <a href="{% url 'item_detail' item.id %}" class="btn btn-report">Отмена</a>
+    {% else %}
+    <a href="{% url 'warehouse' %}" class="btn btn-report">Отмена</a>
+    {% endif %}
+</div>
+
+<div class="card" style="max-width: 800px;">
+    <div class="card-header">
+        <div class="icon-wrap">
+            {% if action == 'add' %}
+            <ion-icon name="add-circle-outline"></ion-icon>
+            {% else %}
+            <ion-icon name="create-outline"></ion-icon>
+            {% endif %}
+        </div>
+        <h3>{% if action == 'add' %}Форма добавления{% else %}Форма редактирования{% endif %}</h3>
+    </div>
+
+    <form method="POST"
+        action="{% if action == 'add' %}{% url 'item_add' %}{% else %}{% url 'item_edit' item.id %}{% endif %}">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group full">
+                <label>Название товара</label>
+                <input type="text" name="name" placeholder="Введите название товара" value="{{ item.name|default:'' }}"
+                    required>
+            </div>
+            <div class="form-group">
+                <label>Категория</label>
+                <select name="category">
+                    <option value="electronics" {% if item.category == 'electronics' %}selected{% endif %}>Электроника</option>
+                    <option value="furniture" {% if item.category == 'furniture' %}selected{% endif %}>Мебель</option>
+                    <option value="food" {% if item.category == 'food' %}selected{% endif %}>Еда</option>
+                    <option value="clothing" {% if item.category == 'clothing' %}selected{% endif %}>Одежда</option>
+                    <option value="other" {% if item.category == 'other' or not item %}selected{% endif %}>Другое</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Базовая цена ($)</label>
+                <input type="number" step="0.01" name="price" placeholder="Например, 1200.00"
+                    value="{{ item.price|default:'' }}" required>
+            </div>
+            <div class="form-group">
+                <label>Количество (шт.)</label>
+                <input type="number" name="quantity" placeholder="Остаток" value="{{ item.quantity|default:'' }}"
+                    required>
+            </div>
+
+            <div class="form-group full" style="margin-top: 16px;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    {% if action == 'add' %}
+                    <ion-icon name="add"></ion-icon> Добавить товар
+                    {% else %}
+                    <ion-icon name="save-outline"></ion-icon> Сохранить изменения
+                    {% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

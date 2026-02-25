@@ -54,5 +54,19 @@
         "item": "MacBook Air 15 M4",
         "qty": 1,
         "total": 1499.0
+    },
+    {
+        "user": "admin",
+        "action": "purchase",
+        "item": "Laptop Pro 15",
+        "qty": 2,
+        "total": 2400.0
+    },
+    {
+        "user": "admin",
+        "action": "purchase",
+        "item": "Apple iPhone 17 Pro",
+        "qty": 1,
+        "total": 699.0
     }
 ]

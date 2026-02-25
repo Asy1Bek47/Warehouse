@@ -1,12 +1,5 @@
 [
     {
-        "id": 1,
-        "name": "Laptop Pro 15",
-        "category": "electronics",
-        "price": 1200.0,
-        "quantity": 8
-    },
-    {
         "id": 2,
         "name": "Office Chair",
         "category": "furniture",
@@ -33,5 +26,12 @@
         "category": "electronics",
         "price": 1499.0,
         "quantity": 15
+    },
+    {
+        "id": 6,
+        "name": "Apple AirPods 4",
+        "category": "electronics",
+        "price": 499.0,
+        "quantity": 9
     }
 ]

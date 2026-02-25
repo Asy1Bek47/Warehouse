@@ -54,7 +54,42 @@ def logout_view(request):
     request.session.flush()
     return redirect('login')
 
-# SRP - Single Responsibility Principle
+
+def calc_item_stats(item):
+    category = item.get('category', 'other')
+    price = item.get('price', 0)
+    
+    tax = 0.0
+    discount = 0.0
+    
+    # OCP (Open/Closed Principle) сломан здесь: 
+    # Функция должна быть закрыта для изменения, но открыта для расширения. 
+    # Сейчас при добавлении новой категории или изменении налогов/скидок нам приходится
+    # залезать внутрь этой функции и модифицировать код (добавлять новые elif).
+    # Лучше использовать паттерн Strategy или вынести эти правила в базу данных/конфиг.
+    if category == 'electronics':
+        tax = 0.20
+        discount = 0.05
+    elif category == 'food':
+        tax = 0.05
+        discount = 0.10
+    elif category == 'clothing':
+        tax = 0.15
+        discount = 0.20
+    elif category == 'furniture':
+        tax = 0.25
+        discount = 0.0
+    else:
+        tax = 0.10
+        discount = 0.0
+        
+    final_price = price + (price * tax) - (price * discount)
+    item['final_price'] = round(final_price, 2)
+    item['tax_rate'] = tax
+    item['discount_rate'] = discount
+    return item
+
+
 def warehouse_view(request):
     user = request.session.get('user')
     if not user:
@@ -62,39 +97,18 @@ def warehouse_view(request):
 
     warehouse_data = read_json(WAREHOUSE_FILE)
     
-    action = request.POST.get('action') if request.method == 'POST' else request.GET.get('action')
-
     if request.method == 'POST':
-        if action == 'add_item':
-            new_item = {
-                "id": len(warehouse_data) + 1 if not warehouse_data else max(i.get('id', 0) for i in warehouse_data) + 1,
-                "name": request.POST.get('name'),
-                "category": request.POST.get('category'),
-                "price": float(request.POST.get('price')),
-                "quantity": int(request.POST.get('quantity'))
-            }
-            warehouse_data.append(new_item)
-            write_json(WAREHOUSE_FILE, warehouse_data)
-            return redirect('warehouse')
-            
-        elif action == 'edit_item':
-            item_id = int(request.POST.get('id'))
-            for item in warehouse_data:
-                if item.get('id') == item_id:
-                    item['name'] = request.POST.get('name')
-                    item['price'] = float(request.POST.get('price'))
-                    item['quantity'] = int(request.POST.get('quantity'))
-                    break
-            write_json(WAREHOUSE_FILE, warehouse_data)
-            return redirect('warehouse')
-            
-        elif action == 'delete_item':
-            item_id = int(request.POST.get('id'))
-            warehouse_data = [item for item in warehouse_data if item.get('id') != item_id]
-            write_json(WAREHOUSE_FILE, warehouse_data)
-            return redirect('warehouse')
-            
-        elif action == 'purchase':
+        action = request.POST.get('action')
+        if action == 'purchase':
+            # SRP (Single Responsibility Principle) сломан здесь:
+            # Эта view-функция (контроллер) берет на себя слишком много ответственностей:
+            # 1. Обрабатывает HTTP-запросы и сессии (что нормально для view).
+            # 2. Содержит бизнес-логику: проверка наличия (quantity >= qty), вычисление остатка.
+            # 3. Напрямую работает с базой данных (читает и пишет JSON-файлы WAREHOUSE_FILE и LOGS_FILE).
+            # 4. Формирует логи (имеет отдельную ответственность за логирование покупок).
+            # 
+            # По правилам SRP, бизнес-логика покупки и работа с данными должны быть вынесены
+            # в отдельные классы/сервисы (например, WarehouseService или LogService).
             item_id = int(request.POST.get('id'))
             purchase_qty = int(request.POST.get('qty', 1))
             
@@ -114,44 +128,86 @@ def warehouse_view(request):
                         }
                         logs.append(log_entry)
                         write_json(LOGS_FILE, logs)
-                        
-
-                            
                     break
             return redirect('warehouse')
             
-
     for item in warehouse_data:
-        category = item.get('category', 'other')
-        price = item.get('price', 0)
-        
-        tax = 0.0
-        discount = 0.0
-        
-        # OCP - Open Closed Principle
-        if category == 'electronics':
-            tax = 0.20
-            discount = 0.05
-        elif category == 'food':
-            tax = 0.05
-            discount = 0.10
-        elif category == 'clothing':
-            tax = 0.15
-            discount = 0.20
-        elif category == 'furniture':
-            tax = 0.25
-            discount = 0.0
-        else:
-            tax = 0.10
-            discount = 0.0
-            
-        final_price = price + (price * tax) - (price * discount)
-        item['final_price'] = round(final_price, 2)
-        item['tax_rate'] = tax
-        item['discount_rate'] = discount
+        calc_item_stats(item)
 
     context = {
         'items': warehouse_data,
         'user': user
     }
     return render(request, 'warehouse.html', context)
+
+
+def item_add_view(request):
+    user = request.session.get('user')
+    if not user:
+        return redirect('login')
+
+    if request.method == 'POST':
+        warehouse_data = read_json(WAREHOUSE_FILE)
+        new_item = {
+            "id": len(warehouse_data) + 1 if not warehouse_data else max(i.get('id', 0) for i in warehouse_data) + 1,
+            "name": request.POST.get('name'),
+            "category": request.POST.get('category'),
+            "price": float(request.POST.get('price')),
+            "quantity": int(request.POST.get('quantity'))
+        }
+        warehouse_data.append(new_item)
+        write_json(WAREHOUSE_FILE, warehouse_data)
+        return redirect('warehouse')
+
+    return render(request, 'item_form.html', {'user': user, 'action': 'add'})
+
+
+def item_detail_view(request, item_id):
+    user = request.session.get('user')
+    if not user:
+        return redirect('login')
+
+    warehouse_data = read_json(WAREHOUSE_FILE)
+    item = next((i for i in warehouse_data if i.get('id') == item_id), None)
+    
+    if not item:
+        return redirect('warehouse')
+        
+    item = calc_item_stats(item)
+        
+    return render(request, 'item_detail.html', {'user': user, 'item': item})
+
+
+def item_edit_view(request, item_id):
+    user = request.session.get('user')
+    if not user:
+        return redirect('login')
+
+    warehouse_data = read_json(WAREHOUSE_FILE)
+    item = next((i for i in warehouse_data if i.get('id') == item_id), None)
+    
+    if not item:
+        return redirect('warehouse')
+
+    if request.method == 'POST':
+        item['name'] = request.POST.get('name')
+        item['category'] = request.POST.get('category')
+        item['price'] = float(request.POST.get('price'))
+        item['quantity'] = int(request.POST.get('quantity'))
+        write_json(WAREHOUSE_FILE, warehouse_data)
+        return redirect('item_detail', item_id=item_id)
+
+    return render(request, 'item_form.html', {'user': user, 'action': 'edit', 'item': item})
+
+
+def item_delete_view(request, item_id):
+    user = request.session.get('user')
+    if not user:
+        return redirect('login')
+
+    if request.method == 'POST':
+        warehouse_data = read_json(WAREHOUSE_FILE)
+        warehouse_data = [item for item in warehouse_data if item.get('id') != item_id]
+        write_json(WAREHOUSE_FILE, warehouse_data)
+        
+    return redirect('warehouse')
